@@ -41,7 +41,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @app.get("/login/{nombre}/{password}", status_code=status.HTTP_200_OK)
 async def login_usuario(nombre: str, password: str):
-    if(nombre == "Julio" and password == "leon"):
+    if(nombre == "julio" and password == "leon"):
         return True
     else: 
         return False
