@@ -28,8 +28,8 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-@app.get("/usuario/{usuario}/{password}", status_code=status.HTTP_200_OK)
-async def mostrar_usuario(usuario: str, password: str, db: db_dependency):
+@app.get("/usuario/login/{usuario}/{password}", status_code=status.HTTP_200_OK)
+async def login_usuario(usuario: str, password: str, db: db_dependency):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
     if db_usuario is None:
         raise HTTPException(status_code=404, detail="Nombre de usuario no encontrado") 
@@ -38,6 +38,14 @@ async def mostrar_usuario(usuario: str, password: str, db: db_dependency):
             return db_usuario
         else:
             raise HTTPException(status_code=404, detail="Usuario o password incorrecto") 
+        
+@app.get("/usuario/mostrar/{id}", status_code=status.HTTP_200_OK)
+async def mostrar_usuario(id: int, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+    else:
+        return db_usuario
  
 @app.post("/usuario/crear/", status_code=status.HTTP_201_CREATED)
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
