@@ -10,16 +10,4 @@ class Chef(Base):
     ubicacion = Column(String(20))
     email = Column(String(30), unique=True)
           
-class Cliente(Base):
-    __tablename__ = "Cliente"
-    cliente_id = Column (Integer, primary_key=True, index=True, autoincrement="auto")
-    nombre_cliente = Column(String(100))
-    password = Column(String(30))
-    email = Column(String(30), unique=True)
   
-class Administrador(Base):
-    __tablename__ = "Administrador"
-    administrador_id = Column (Integer, primary_key=True, index=True, autoincrement="auto")
-    nombre_administrador = Column(String(100))
-    password = Column(String(30))
-    email = Column(String(30), unique=True)

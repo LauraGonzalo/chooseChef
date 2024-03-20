@@ -7,29 +7,6 @@ from sqlalchemy.orm import Session
 
 app = FastAPI()
 
-class ChefBase(BaseModel):
-    chefId:int
-    usuarioChef: str
-    nombreChef:str
-    password:str
-    descripcion: str
-    telefono: str
-    ubicacion:str
-    email:str
-
-class ClienteBase(BaseModel):
-    clienteId:int
-    usuarioCliente: str
-    nombreCliente:str
-    password:str
-    email:str
-
-class AdministradorBase(BaseModel):
-    administradorId:int
-    usuarioAdministrador: str
-    password:str
-    email:str
-
 def get_db():
     db=SessionLocal()
     try:
