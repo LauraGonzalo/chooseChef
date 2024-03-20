@@ -60,6 +60,14 @@ async def mostrar_usuario(id: int, db: db_dependency):
         raise HTTPException(status_code=404, detail="Usuario no encontrado") 
     else:
         return db_usuario
+
+@app.get("/usuario/mostrar/porusuario/{usuario}", status_code=status.HTTP_200_OK)
+async def mostrar_porUsuario(usuario: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    else:
+        return db_usuario.nombre, db_usuario.telefono, db_usuario.ubicacion
  
 @app.post("/usuario/crear/", status_code=status.HTTP_201_CREATED)
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
@@ -77,6 +85,18 @@ async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
     db_usuario.nombre = usuario.nombre
     db_usuario.password = usuario.password
     db_usuario.descripcion = usuario.descripcion
+    db_usuario.ubicacion = usuario.ubicacion
+    db_usuario.telefono = usuario.telefono
+    db.commit()
+    return "El usuario se ha modificado correctamente"
+
+@app.post("/usuario/modificar/porusuario", status_code=status.HTTP_200_OK)
+async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+    db_usuario.usuario = usuario.usuario
+    db_usuario.nombre = usuario.nombre
     db_usuario.ubicacion = usuario.ubicacion
     db_usuario.telefono = usuario.telefono
     db.commit()
