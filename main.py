@@ -31,13 +31,13 @@ db_dependency = Annotated[Session, Depends(get_db)]
 @app.get("/usuario/login/respuesta/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta(usuario: str, password: str, db: db_dependency):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
-    ##if db_usuario is None:
-    ##    raise HTTPException(status_code=404, detail="Nombre de usuario no encontrado") 
-    ##else:
-    if db_usuario.password == password and db_usuario.usuario == usuario:
-        return True
-    else:
+    if db_usuario is None:
         return False
+    else:
+        if db_usuario.password == password:
+            return True
+        else:
+            return False
     ##    else:
     ##        return False
     ##        raise HTTPException(status_code=404, detail="Usuario o password incorrecto") 
