@@ -1,4 +1,5 @@
 # uvicorn main:app --reload
+from secrets import token_urlsafe
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
 from database import engine, SessionLocal
@@ -28,6 +29,23 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+lista_token = []
+
+@app.get("/usuario/login/token/{usuario}/{password}", status_code=status.HTTP_200_OK)
+async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
+    if db_usuario is None:
+        return False
+    else:
+        if db_usuario.password == password:
+            token = token_urlsafe(16)
+            lista_token.append(token)
+            print(lista_token)
+            
+            return token
+        else:
+            return False
+
 @app.get("/usuario/login/respuesta/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta(usuario: str, password: str, db: db_dependency):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
@@ -53,13 +71,16 @@ async def login_usuario(usuario: str, password: str, db: db_dependency):
         else:
             raise HTTPException(status_code=404, detail="Usuario o password incorrecto") 
         
-@app.get("/usuario/mostrar/{id}", status_code=status.HTTP_200_OK)
-async def mostrar_usuario(id: int, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
-    if db_usuario is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+@app.get("/usuario/mostrar/{token}/{id}", status_code=status.HTTP_200_OK)
+async def mostrar_usuario(token: str, id: int, db: db_dependency):
+    if token in lista_token:
+        db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
+        if db_usuario is None:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+        else:
+            return db_usuario
     else:
-        return db_usuario
+        raise HTTPException(status_code=404, detail="El token no es válido")    
 
 @app.get("/usuario/mostrar/porusuario/{usuario}", status_code=status.HTTP_200_OK)
 async def mostrar_porUsuario(usuario: str, db: db_dependency):
