@@ -4,7 +4,7 @@ from database import Base
 class Usuario(Base):
     __tablename__ = "usuario"
     id = Column (Integer, primary_key=True, index=True, autoincrement="auto")
-    usuario = Column(String(45))
+    usuario = Column(String(45), unique=True)
     nombre = Column(String(130))
     password = Column(String(30))
     email = Column(String(45), unique=True)

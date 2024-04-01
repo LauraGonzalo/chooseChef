@@ -1,4 +1,5 @@
 # uvicorn main:app --reload
+from collections import defaultdict
 from secrets import token_urlsafe
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
@@ -6,6 +7,8 @@ from database import engine, SessionLocal
 import models
 from typing import Annotated
 from sqlalchemy.orm import Session
+from jwt import encode, decode
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -29,7 +32,7 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-lista_token = []
+usuario_token_map = defaultdict(list)
 
 @app.get("/usuario/login/token/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
@@ -39,12 +42,57 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
     else:
         if db_usuario.password == password:
             token = token_urlsafe(16)
-            lista_token.append(token)
-            print(lista_token)
+            usuario_token_map[usuario].append(token)
+            ##print(lista_token)
             
             return token
         else:
             return False
+
+@app.get("/usuario/login/token2/{usuario}/{password}", status_code=status.HTTP_200_OK)
+async def login_respuesta_token2(usuario: str, password: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
+
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+
+    if db_usuario.password != password:
+        return {"error": "Contraseña incorrecta"}
+
+    # Generar token
+    token_payload = {
+        "usuario": usuario,
+        "exp": datetime.now() + timedelta(minutes=60),
+    }
+
+    token = encode(token_payload, "secret_key", algorithm="HS256")
+
+    return {"token": token}
+
+@app.get("/usuario/perfil", status_code=status.HTTP_200_OK)
+async def obtener_perfil(token: str, db: db_dependency):
+    try:
+        decoded_token = decode(token, "secret_key", algorithms=["HS256"])
+        usuario = decoded_token["usuario"]
+    except Exception as e:
+        print(f"Error al decodificar token: {e}")
+        return {"error": "Token no válido"}
+
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
+
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+
+    try:
+        return {
+            "password": db_usuario.password,
+            "nombre": db_usuario.nombre,
+            "telefono": db_usuario.telefono,
+            "ubicacion": db_usuario.ubicacion,
+        }
+    except Exception as e:
+        print(f"Error al obtener perfil: {e}")
+        return {"error": "Error al obtener perfil"}
 
 @app.get("/usuario/login/respuesta/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta(usuario: str, password: str, db: db_dependency):
@@ -73,7 +121,7 @@ async def login_usuario(usuario: str, password: str, db: db_dependency):
         
 @app.get("/usuario/mostrar/{token}/{id}", status_code=status.HTTP_200_OK)
 async def mostrar_usuario(token: str, id: int, db: db_dependency):
-    if token in lista_token:
+    if token in usuario_token_map:
         db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
         if db_usuario is None:
             raise HTTPException(status_code=404, detail="Usuario no encontrado") 
