@@ -149,14 +149,12 @@ async def crear_usuario_basico(usuario: UsuarioBase, db: db_dependency):
     db.commit()
     return "El usuario se ha registrado correctamente"
 
-@app.post("/usuario/crear", status_code=status.HTTP_201_CREATED)
+@app.route("/usuario/crear", methods=["POST"])
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     db_usuario = models.Usuario(**usuario.dict())
     db.add(db_usuario)
     db.commit()
     return "El usuario se ha registrado correctamente"
-
-
 
 @app.post("/usuario/modificar/", status_code=status.HTTP_200_OK)
 async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
@@ -183,6 +181,18 @@ async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
     db_usuario.telefono = usuario.telefono
     db.commit()
     return "El usuario se ha modificado correctamente"
+
+@app.post("/usuario/crear1", status_code=status.HTTP_200_OK)
+async def crear_usuario1(usuario: UsuarioBase, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
+    if db_usuario is None:
+        db_usuario = models.Usuario(**usuario.dict())
+        db.add(db_usuario)
+        db.commit()
+        return "El usuario se ha registrado correctamente"
+    else:
+        return "El usuario ya existe"
+
     
 @app.delete("/usuario/{id}", status_code=status.HTTP_200_OK)
 async def eliminar_usuario(id:int, db: db_dependency):
