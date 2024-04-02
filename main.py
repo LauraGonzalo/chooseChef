@@ -138,12 +138,25 @@ async def mostrar_porUsuario(usuario: str, db: db_dependency):
     else:
         return db_usuario.nombre, db_usuario.telefono, db_usuario.ubicacion
  
-@app.post("/usuario/crear/", status_code=status.HTTP_201_CREATED)
+@app.post("/usuario/crear/basico", status_code=status.HTTP_201_CREATED)
+async def crear_usuario_basico(usuario: UsuarioBase, db: db_dependency):
+    new_user = models.Usuario(
+        usuario=usuario.usuario,
+        password=usuario.password,
+        tipo=usuario.tipo,
+    )
+    db.add(new_user)
+    db.commit()
+    return "El usuario se ha registrado correctamente"
+
+@app.route("/usuario/crear", methods=["POST"])
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     db_usuario = models.Usuario(**usuario.dict())
     db.add(db_usuario)
     db.commit()
     return "El usuario se ha registrado correctamente"
+
+
 
 @app.post("/usuario/modificar/", status_code=status.HTTP_200_OK)
 async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
