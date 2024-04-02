@@ -149,7 +149,7 @@ async def crear_usuario_basico(usuario: UsuarioBase, db: db_dependency):
     db.commit()
     return "El usuario se ha registrado correctamente"
 
-@app.route("/usuario/crear", methods=["POST"])
+@app.post("/usuario/crear", status_code=status.HTTP_201_CREATED)
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     db_usuario = models.Usuario(**usuario.dict())
     db.add(db_usuario)
