@@ -32,25 +32,11 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-usuario_token_map = defaultdict(list)
-
+#Método que sirve para el login en la app
+#Los parámetros son @usuario y @password
+#Devuelve token de sesion
 @app.get("/usuario/login/token/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
-    if db_usuario is None:
-        return False
-    else:
-        if db_usuario.password == password:
-            token = token_urlsafe(16)
-            usuario_token_map[usuario].append(token)
-            ##print(lista_token)
-            
-            return token
-        else:
-            return False
-
-@app.get("/usuario/login/token2/{usuario}/{password}", status_code=status.HTTP_200_OK)
-async def login_respuesta_token2(usuario: str, password: str, db: db_dependency):
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
 
     if db_usuario is None:
@@ -69,7 +55,10 @@ async def login_respuesta_token2(usuario: str, password: str, db: db_dependency)
 
     return {"token": token}
 
-@app.get("/usuario/perfil", status_code=status.HTTP_200_OK)
+# Metodo que sirve para mostrar usuario
+#@token de sesion
+# devuelve perfil de usario completo
+@app.get("/usuario/perfil/", status_code=status.HTTP_200_OK)
 async def obtener_perfil(token: str, db: db_dependency):
     try:
         decoded_token = decode(token, "secret_key", algorithms=["HS256"])
@@ -84,15 +73,85 @@ async def obtener_perfil(token: str, db: db_dependency):
         return {"error": "Usuario no encontrado"}
 
     try:
-        return {
-            "password": db_usuario.password,
-            "nombre": db_usuario.nombre,
-            "telefono": db_usuario.telefono,
-            "ubicacion": db_usuario.ubicacion,
-        }
+        return db_usuario
+    
     except Exception as e:
         print(f"Error al obtener perfil: {e}")
         return {"error": "Error al obtener perfil"}
+
+# Metodo para crear usuario
+@app.post("/usuario/crear/", status_code=status.HTTP_200_OK)
+async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
+    if db_usuario is None:
+        db_usuario = models.Usuario(**usuario.dict())
+        db.add(db_usuario)
+        db.commit()
+        return "El usuario se ha registrado correctamente"
+    else:
+        raise HTTPException(status_code=404, detail="El usuario ya existe")
+
+
+        
+# Metodo para modificar usuario
+# Recibe @token
+# Devuelve usuario modificado
+@app.post("/usuario/modificar/", status_code=status.HTTP_200_OK)
+async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: db_dependency):
+    try:
+        decoded_token = decode(token, "secret_key", algorithms=["HS256"])
+        username = decoded_token["usuario"]
+    except Exception as e:
+        print(f"Error al decodificar token: {e}")
+        return {"error": "Token no válido"}
+    
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == username).first()
+    
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+    db_usuario.usuario = usuario_actualizado.usuario
+    db_usuario.nombre = usuario_actualizado.nombre
+    db_usuario.password = usuario_actualizado.password
+    db_usuario.descripcion = usuario_actualizado.descripcion
+    db_usuario.ubicacion = usuario_actualizado.ubicacion
+    db_usuario.email = usuario_actualizado.email
+    db_usuario.telefono = usuario_actualizado.telefono
+    db_usuario.tipo = usuario_actualizado.tipo
+    db.commit()
+    return "El usuario se ha modificado correctamente"
+    
+#Metodo que sirve para eliminar usuario    
+@app.delete("/usuario/{id}", status_code=status.HTTP_200_OK)
+async def eliminar_usuario(id:int, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    else:
+        db.delete(db_usuario)
+        db.commit()
+        return "Usuario eliminado"
+    
+
+
+
+"""METODOS DESCARTADOS
+
+usuario_token_map = defaultdict(list)
+
+@app.get("/usuario/login/token/{usuario}/{password}", status_code=status.HTTP_200_OK)
+async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
+    if db_usuario is None:
+        return False
+    else:
+        if db_usuario.password == password:
+            token = token_urlsafe(16)
+            usuario_token_map[usuario].append(token)
+            ##print(lista_token)
+            
+            return token
+        else:
+            return False
 
 @app.get("/usuario/login/respuesta/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta(usuario: str, password: str, db: db_dependency):
@@ -137,7 +196,7 @@ async def mostrar_porUsuario(usuario: str, db: db_dependency):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     else:
         return db_usuario.nombre, db_usuario.telefono, db_usuario.ubicacion
- 
+
 @app.post("/usuario/crear/basico", status_code=status.HTTP_201_CREATED)
 async def crear_usuario_basico(usuario: UsuarioBase, db: db_dependency):
     new_user = models.Usuario(
@@ -156,15 +215,13 @@ async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     db.commit()
     return "El usuario se ha registrado correctamente"
 
-@app.post("/usuario/modificar/", status_code=status.HTTP_200_OK)
+@app.post("/usuario/modificar/porusuario", status_code=status.HTTP_200_OK)
 async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario.id).first()
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
     if db_usuario is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado") 
     db_usuario.usuario = usuario.usuario
     db_usuario.nombre = usuario.nombre
-    db_usuario.password = usuario.password
-    db_usuario.descripcion = usuario.descripcion
     db_usuario.ubicacion = usuario.ubicacion
     db_usuario.telefono = usuario.telefono
     db.commit()
@@ -182,26 +239,5 @@ async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
     db.commit()
     return "El usuario se ha modificado correctamente"
 
-@app.post("/usuario/crear1", status_code=status.HTTP_200_OK)
-async def crear_usuario1(usuario: UsuarioBase, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
-    if db_usuario is None:
-        db_usuario = models.Usuario(**usuario.dict())
-        db.add(db_usuario)
-        db.commit()
-        return "El usuario se ha registrado correctamente"
-    else:
-        return "El usuario ya existe"
 
-    
-@app.delete("/usuario/{id}", status_code=status.HTTP_200_OK)
-async def eliminar_usuario(id:int, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
-    if db_usuario is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    else:
-        db.delete(db_usuario)
-        db.commit()
-        return "Usuario eliminado"
-    
-    
+"""
