@@ -92,7 +92,7 @@ async def listar_chef(db: db_dependency):
 
 # Metodo que sirve para listar las provincias (por ubicación) en las que al menos hay un chef
 # @ubicacion
-@app.get("/provincias/conChef", status_code=status.HTTP_200_OK)
+@app.get("/provincias/conChef/", status_code=status.HTTP_200_OK)
 async def listar_ubicaciones_con_chefs(db: db_dependency):
     ubicaciones = db.query(models.Usuario.ubicacion) \
         .filter(models.Usuario.tipo == "chef") \
