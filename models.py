@@ -12,5 +12,7 @@ class Usuario(Base):
     descripcion = Column(String(500))
     ubicacion = Column(String(45))
     telefono = Column(String(15))
+    comida = Column(String(130))
+    servicio = Column(String(130))
     
           

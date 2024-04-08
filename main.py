@@ -22,6 +22,8 @@ class UsuarioBase(BaseModel):
     email:str
     telefono: str
     tipo: str
+    comida: str
+    servicio: str
 
 def get_db():
     db=SessionLocal()
@@ -103,6 +105,22 @@ async def listar_ubicaciones_con_chefs(db: db_dependency):
     if not lista_ubicaciones:
         raise HTTPException(status_code=404, detail="No se encontraron chefs en ninguna ubicacion")
     return lista_ubicaciones
+
+# Metodo que sirve para listar chefs por ubicacion, comida y servicio
+# @ubicacion, @comida, @servicio
+# retorna lista de chef por los tres filtros
+@app.get("/chef/listar/por/{ubicacion}/{comida}/{servicio}", status_code=status.HTTP_200_OK)
+async def listar_chef_por_ubicacion_comida_servicio(ubicacion: str, comida: str, servicio: str, db: db_dependency):
+    db_chefs = db.query(models.Usuario) \
+        .filter(models.Usuario.tipo == "chef") \
+        .filter(models.Usuario.ubicacion == ubicacion) \
+        .filter(models.Usuario.comida == comida) \
+        .filter(models.Usuario.servicio == servicio) \
+        .all()    
+        
+    if not db_chefs:
+        raise HTTPException(status_code=404, detail="No se encontrarosn chefs")
+    return db_chefs
 
 # Metodo para crear usuario
 @app.post("/usuario/crear/", status_code=status.HTTP_200_OK)
