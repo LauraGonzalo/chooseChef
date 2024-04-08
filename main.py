@@ -78,6 +78,31 @@ async def obtener_perfil(token: str, db: db_dependency):
     except Exception as e:
         print(f"Error al obtener perfil: {e}")
         return {"error": "Error al obtener perfil"}
+    
+#Metodo para listar los chefs
+# Solo se listan chefs, no se utiliza para el resto de usuarios
+@app.get("/chef/listar/", status_code=status.HTTP_200_OK)
+async def listar_chef(db: db_dependency):
+    db_chefs = db.query(models.Usuario) \
+        .filter(models.Usuario.tipo == "chef") \
+        .all()
+    if not db_chefs:
+        raise HTTPException(status_code=404, detail="No se encontrarosn chefs")
+    return db_chefs
+
+# Metodo que sirve para listar las provincias (por ubicación) en las que al menos hay un chef
+# @ubicacion
+@app.get("/provincias/conChef", status_code=status.HTTP_200_OK)
+async def listar_ubicaciones_con_chefs(db: db_dependency):
+    ubicaciones = db.query(models.Usuario.ubicacion) \
+        .filter(models.Usuario.tipo == "chef") \
+        .distinct() \
+        .all()
+    lista_ubicaciones = [ubicacion[0] for ubicacion in ubicaciones]
+    
+    if not lista_ubicaciones:
+        raise HTTPException(status_code=404, detail="No se encontraron chefs en ninguna ubicacion")
+    return lista_ubicaciones
 
 # Metodo para crear usuario
 @app.post("/usuario/crear/", status_code=status.HTTP_200_OK)
