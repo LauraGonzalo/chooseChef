@@ -161,6 +161,10 @@ async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: d
     db_usuario.email = usuario_actualizado.email
     db_usuario.telefono = usuario_actualizado.telefono
     db_usuario.tipo = usuario_actualizado.tipo
+    db_usuario.comida = usuario_actualizado.comida
+    db_usuario.servicio = usuario_actualizado.servicio
+    db_usuario.valoracion = usuario_actualizado.valoracion
+    
     db.commit()
     return "El usuario se ha modificado correctamente"
     
