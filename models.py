@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Column
+from sqlalchemy import String, Integer, Column, Float
 from database import Base
 
 class Usuario(Base):
@@ -14,5 +14,6 @@ class Usuario(Base):
     telefono = Column(String(15))
     comida = Column(String(130))
     servicio = Column(String(130))
+    valoracion = Column(Float)
     
           

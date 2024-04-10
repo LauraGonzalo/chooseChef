@@ -24,6 +24,7 @@ class UsuarioBase(BaseModel):
     tipo: str
     comida: str
     servicio: str
+    valoracion: float
 
 def get_db():
     db=SessionLocal()
