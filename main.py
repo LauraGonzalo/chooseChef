@@ -135,8 +135,6 @@ async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     else:
         raise HTTPException(status_code=404, detail="El usuario ya existe")
 
-
-        
 # Metodo para modificar usuario
 # Recibe @token
 # Devuelve usuario modificado
@@ -167,11 +165,61 @@ async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: d
     
     db.commit()
     return "El usuario se ha modificado correctamente"
+
+# USUARIO ADMINISTRADOR
+
+# Metodo para listar todos los usuarios
+@app.get("/admin/listar/", status_code=status.HTTP_200_OK)
+async def listar_todos_usuarios(db: db_dependency):
+    db_usuarios = db.query(models.Usuario).all() 
     
+    if not db_usuarios:
+        raise HTTPException(status_code=404, detail="No se encontraron usuarios")
+    return db_usuarios   
+
+# Metodo para obtener perfil de un determinado usuario
+# @usuario
+@app.get("/admin/perfil/", status_code=status.HTTP_200_OK)
+async def obtener_perfil_admin(usuario: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
+
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+
+    try:
+        return db_usuario
+    
+    except Exception as e:
+        print(f"Error al obtener perfil: {e}")
+        return {"error": "Error al obtener perfil"}
+
+# Metodo para que el admin pueda modificar un determinado usuario
+@app.post("/admin/modificar/{usuario}", status_code=status.HTTP_200_OK)
+async def modificar_usuario_admin (usuario_actualizado: UsuarioBase, usuario: str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
+    
+    if db_usuario is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+    db_usuario.usuario = usuario_actualizado.usuario
+    db_usuario.nombre = usuario_actualizado.nombre
+    db_usuario.password = usuario_actualizado.password
+    db_usuario.descripcion = usuario_actualizado.descripcion
+    db_usuario.ubicacion = usuario_actualizado.ubicacion
+    db_usuario.email = usuario_actualizado.email
+    db_usuario.telefono = usuario_actualizado.telefono
+    db_usuario.tipo = usuario_actualizado.tipo
+    db_usuario.comida = usuario_actualizado.comida
+    db_usuario.servicio = usuario_actualizado.servicio
+    db_usuario.valoracion = usuario_actualizado.valoracion
+    
+    db.commit()
+    return "El usuario se ha modificado correctamente"
+
+ 
 #Metodo que sirve para eliminar usuario    
-@app.delete("/usuario/{id}", status_code=status.HTTP_200_OK)
-async def eliminar_usuario(id:int, db: db_dependency):
-    db_usuario = db.query(models.Usuario).filter(models.Usuario.id == id).first()
+@app.delete("/usuario/{usuario}", status_code=status.HTTP_200_OK)
+async def eliminar_usuario(usuario:str, db: db_dependency):
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
     if db_usuario is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     else:
