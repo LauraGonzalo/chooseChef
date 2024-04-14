@@ -1,7 +1,7 @@
 # uvicorn main:app --reload
 from collections import defaultdict
 from secrets import token_urlsafe
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import Body, FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
 from database import engine, SessionLocal
 import models
@@ -9,11 +9,12 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from jwt import encode, decode
 from datetime import datetime, timedelta
+from sqlalchemy.sql import or_
 
 app = FastAPI()
 
 class UsuarioBase(BaseModel):
-    id:int
+    id: int
     usuario: str
     nombre:str
     password:str
@@ -25,6 +26,14 @@ class UsuarioBase(BaseModel):
     comida: str
     servicio: str
     valoracion: float
+
+class ReservaBase(BaseModel):
+    id: int
+    usuario_cliente: str
+    usuario_chef: str
+    fecha: datetime
+    valoracion: float
+    comentario: str
 
 def get_db():
     db=SessionLocal()
@@ -166,7 +175,7 @@ async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: d
     db.commit()
     return "El usuario se ha modificado correctamente"
 
-# USUARIO ADMINISTRADOR
+# METODOS PARA EL USUARIO ADMINISTRADOR
 
 # Metodo para listar todos los usuarios
 @app.get("/admin/listar/", status_code=status.HTTP_200_OK)
@@ -226,11 +235,90 @@ async def eliminar_usuario(usuario:str, db: db_dependency):
         db.delete(db_usuario)
         db.commit()
         return "Usuario eliminado"
+
+# METODOS PARA LAS RESERVAS
+# Metodo para crear una nueva reserva
+@app.post("/reserva/crear/", status_code=status.HTTP_200_OK)
+async def crear_reserva(reserva: ReservaBase, db: db_dependency):
     
+    # Validar que los campos están ok
+    if not reserva.usuario_cliente or not reserva.usuario_chef or not reserva.fecha:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Faltan datos obligatorios")
+
+    # Chequear si el chef ya tiene una reserva para la misma fecha
+    existe_reserva = db.query(models.Reserva) \
+        .filter(models.Reserva.usuario_chef == reserva.usuario_chef) \
+        .filter(models.Reserva.fecha == reserva.fecha) \
+        .first()
+
+    if existe_reserva:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El chef ya tiene una reserva para esa fecha")
+
+    # Añadir la reserva a la base de datos
+    db_reserva = models.Reserva(**reserva.dict())
+    db.add(db_reserva)
+    db.commit()
+    return "La reserva se ha registrado correctamente"
+    
+# Metodo para modificar la reserva
+# @id   
+# En el json, es necesario rellenar todos los datos para que no de error 
+@app.post("/reserva/modificar/{id}", status_code=status.HTTP_200_OK)
+async def modificar_reserva (reserva_actualizada: ReservaBase, id: int, db: db_dependency):
+    db_reserva = db.query(models.Reserva).filter(models.Reserva.id == id).first()
+    
+    if db_reserva is None:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada") 
+    db_reserva.usuario_cliente = reserva_actualizada.usuario_cliente
+    db_reserva.usuario_chef = reserva_actualizada.usuario_chef
+    db_reserva.valoracion = reserva_actualizada.valoracion
+    db_reserva.comentario = reserva_actualizada.comentario
+    db_reserva.fecha = reserva_actualizada.fecha
+    
+    db.commit()
+    return "La reserva se ha modificado correctamente"
+
+# Metodo para listar todas las reservas que tiene un usuario
+# @token
+@app.get("/reserva/listar/{token}", status_code=status.HTTP_200_OK)
+async def listar_reserva(token:str, db: db_dependency):
+    try:
+        decoded_token = decode(token, "secret_key", algorithms=["HS256"])
+        usuario = decoded_token["usuario"]
+    except Exception as e:
+        print(f"Error al decodificar token: {e}")
+        return {"error": "Token no válido"}
+
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
+
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+
+    reservas = db.query(models.Reserva) \
+        .filter(or_(models.Reserva.usuario_cliente == usuario,  
+                    models.Reserva.usuario_chef == usuario)) \
+        .all()
+    return reservas
+   
+        
 
 
 
 """METODOS DESCARTADOS
+
+reservas = db.query(models.Reserva) \
+        .join(models.Reserva.usuario_cliente) \
+        .join(models.Reserva.usuario_chef) \
+        .filter(or_(models.Reserva.usuario_cliente == usuario,  
+                    models.Reserva.usuario_chef == usuario)) \
+        .all()
+    return reservas
+
+reservas = db.query(models.Reserva) \
+        .join(models.Usuario.usuario == models.Reserva.usuario_cliente) \
+        .join(models.Usuario.usuario == models.Reserva.usuario_chef) \
+        .filter(models.Usuario.usuario == usuario) \
+        .all()
 
 usuario_token_map = defaultdict(list)
 

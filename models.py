@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Column, Float
+from sqlalchemy import DateTime, ForeignKey, String, Integer, Column, Float
 from database import Base
 
 class Usuario(Base):
@@ -15,5 +15,15 @@ class Usuario(Base):
     comida = Column(String(130))
     servicio = Column(String(130))
     valoracion = Column(Float)
+
+class Reserva(Base):
+    __tablename__ = "reserva"
+    id = Column (Integer, primary_key=True)
+    usuario_cliente = Column(String(45), ForeignKey("usuario.usuario", ondelete="CASCADE", onupdate="CASCADE"))
+    usuario_chef = Column(String(45), ForeignKey("usuario.usuario", ondelete="CASCADE", onupdate="CASCADE"))
+    valoracion = Column (Float)
+    comentario = Column (String(500))
+    fecha = Column (DateTime)   
+    
     
           
