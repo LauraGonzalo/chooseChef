@@ -18,7 +18,7 @@ class Usuario(Base):
 
 class Reserva(Base):
     __tablename__ = "reserva"
-    id = Column (Integer, primary_key=True)
+    id = Column (Integer, primary_key=True, index=True, autoincrement="auto")
     usuario_cliente = Column(String(45), ForeignKey("usuario.usuario", ondelete="CASCADE", onupdate="CASCADE"))
     usuario_chef = Column(String(45), ForeignKey("usuario.usuario", ondelete="CASCADE", onupdate="CASCADE"))
     valoracion = Column (Float)

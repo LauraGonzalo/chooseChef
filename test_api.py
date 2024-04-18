@@ -6,9 +6,6 @@ from sqlalchemy.orm import Session
 from httpx import AsyncClient
 from sqlalchemy.orm import declarative_base
 
-"""class TestAPI():
-  def setup(self):
-    self.client = TestClient(app)"""
 
 client = TestClient(app)
 
