@@ -44,11 +44,19 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-#Método que sirve para el login en la app
-#Los parámetros son @usuario y @password
-#Devuelve token de sesion
 @app.get("/usuario/login/token/{usuario}/{password}", status_code=status.HTTP_200_OK)
 async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
+    """
+    Método que sirve para el login en la app.
+    
+    Parámetros:
+    usuario (str): Nombre de usuario.
+    password (str): Contraseña del usuario.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    dict: Token de sesión.
+    """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
 
     if db_usuario is None:
@@ -67,11 +75,18 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
 
     return {"token": token}
 
-# Metodo que sirve para mostrar usuario
-#@token de sesion
-# devuelve perfil de usario completo
 @app.get("/usuario/perfil/", status_code=status.HTTP_200_OK)
 async def obtener_perfil(token: str, db: db_dependency):
+    """
+    Método que sirve para mostrar usuario.
+    
+    Parámetros:
+    token (str): Token de sesión.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    dict: Perfil de usuario completo.
+    """
     try:
         decoded_token = decode(token, "secret_key", algorithms=["HS256"])
         usuario = decoded_token["usuario"]
@@ -91,10 +106,17 @@ async def obtener_perfil(token: str, db: db_dependency):
         print(f"Error al obtener perfil: {e}")
         return {"error": "Error al obtener perfil"}
     
-#Metodo para listar los chefs
-# Solo se listan chefs, no se utiliza para el resto de usuarios
 @app.get("/chef/listar/", status_code=status.HTTP_200_OK)
 async def listar_chef(db: db_dependency):
+    """
+    Metodo para listar los chefs.
+    
+    Parámetros:
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de chefs.
+    """
     db_chefs = db.query(models.Usuario) \
         .filter(models.Usuario.tipo == "chef") \
         .all()
@@ -102,10 +124,17 @@ async def listar_chef(db: db_dependency):
         raise HTTPException(status_code=404, detail="No se encontrarosn chefs")
     return db_chefs
 
-# Metodo que sirve para listar las provincias (por ubicación) en las que al menos hay un chef
-# @ubicacion
 @app.get("/provincias/conChef/", status_code=status.HTTP_200_OK)
 async def listar_ubicaciones_con_chefs(db: db_dependency):
+    """
+    Metodo que sirve para listar las provincias (por ubicación) en las que al menos hay un chef.
+    
+    Parámetros:
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de ubicaciones con chefs.
+    """
     ubicaciones = db.query(models.Usuario.ubicacion) \
         .filter(models.Usuario.tipo == "chef") \
         .distinct() \
@@ -116,11 +145,20 @@ async def listar_ubicaciones_con_chefs(db: db_dependency):
         raise HTTPException(status_code=404, detail="No se encontraron chefs en ninguna ubicacion")
     return lista_ubicaciones
 
-# Metodo que sirve para listar chefs por ubicacion, comida y servicio
-# @ubicacion, @comida, @servicio
-# retorna lista de chef por los tres filtros
 @app.get("/chef/listar/por/{ubicacion}/{comida}/{servicio}", status_code=status.HTTP_200_OK)
 async def listar_chef_por_ubicacion_comida_servicio(ubicacion: str, comida: str, servicio: str, db: db_dependency):
+    """
+    Metodo que sirve para listar chefs por ubicacion, comida y servicio.
+    
+    Parámetros:
+    ubicacion (str): Ubicación del chef.
+    comida (str): Tipo de comida que ofrece el chef.
+    servicio (str): Tipo de servicio que ofrece el chef.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de chefs por los tres filtros.
+    """
     db_chefs = db.query(models.Usuario) \
         .filter(models.Usuario.tipo == "chef") \
         .filter(models.Usuario.ubicacion == ubicacion) \
@@ -132,9 +170,18 @@ async def listar_chef_por_ubicacion_comida_servicio(ubicacion: str, comida: str,
         raise HTTPException(status_code=404, detail="No se encontrarosn chefs")
     return db_chefs
 
-# Metodo para crear usuario
 @app.post("/usuario/crear/", status_code=status.HTTP_200_OK)
 async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
+    """
+    Metodo para crear usuario.
+    
+    Parámetros:
+    usuario (UsuarioBase): Objeto que contiene los datos del usuario.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si el usuario se ha registrado correctamente.
+    """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
     if db_usuario is None:
         db_usuario = models.Usuario(**usuario.dict())
@@ -144,11 +191,19 @@ async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     else:
         raise HTTPException(status_code=404, detail="El usuario ya existe")
 
-# Metodo para modificar usuario
-# Recibe @token
-# Devuelve usuario modificado
 @app.post("/usuario/modificar/", status_code=status.HTTP_200_OK)
 async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: db_dependency):
+    """
+    Metodo para modificar usuario.
+    
+    Parámetros:
+    usuario_actualizado (UsuarioBase): Objeto que contiene los datos actualizados del usuario.
+    token (str): Token de sesión.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si el usuario se ha modificado correctamente.
+    """
     try:
         decoded_token = decode(token, "secret_key", algorithms=["HS256"])
         username = decoded_token["usuario"]
@@ -177,19 +232,35 @@ async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: d
 
 # METODOS PARA EL USUARIO ADMINISTRADOR
 
-# Metodo para listar todos los usuarios
 @app.get("/admin/listar/", status_code=status.HTTP_200_OK)
 async def listar_todos_usuarios(db: db_dependency):
+    """
+    Método para listar todos los usuarios.
+    
+    Parámetros:
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de todos los usuarios.
+    """
     db_usuarios = db.query(models.Usuario).all() 
     
     if not db_usuarios:
         raise HTTPException(status_code=404, detail="No se encontraron usuarios")
     return db_usuarios   
 
-# Metodo para obtener perfil de un determinado usuario
-# @usuario
 @app.get("/admin/perfil/", status_code=status.HTTP_200_OK)
 async def obtener_perfil_admin(usuario: str, db: db_dependency):
+    """
+    Método para obtener el perfil de un determinado usuario.
+    
+    Parámetros:
+    usuario (str): Nombre de usuario.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    dict: Perfil del usuario.
+    """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
 
     if db_usuario is None:
@@ -205,6 +276,17 @@ async def obtener_perfil_admin(usuario: str, db: db_dependency):
 # Metodo para que el admin pueda modificar un determinado usuario
 @app.post("/admin/modificar/{usuario}", status_code=status.HTTP_200_OK)
 async def modificar_usuario_admin (usuario_actualizado: UsuarioBase, usuario: str, db: db_dependency):
+    """
+    Método para que el admin pueda modificar un determinado usuario.
+    
+    Parámetros:
+    usuario_actualizado (UsuarioBase): Objeto que contiene los datos actualizados del usuario.
+    usuario (str): Nombre de usuario a modificar.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si el usuario se ha modificado correctamente.
+    """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
     
     if db_usuario is None:
@@ -224,10 +306,18 @@ async def modificar_usuario_admin (usuario_actualizado: UsuarioBase, usuario: st
     db.commit()
     return "El usuario se ha modificado correctamente"
 
- 
-#Metodo que sirve para eliminar usuario    
 @app.delete("/usuario/{usuario}", status_code=status.HTTP_200_OK)
 async def eliminar_usuario(usuario:str, db: db_dependency):
+    """
+    Método que sirve para eliminar usuario.
+    
+    Parámetros:
+    usuario (str): Nombre de usuario a eliminar.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si el usuario se ha eliminado correctamente.
+    """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
     if db_usuario is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -237,9 +327,19 @@ async def eliminar_usuario(usuario:str, db: db_dependency):
         return "Usuario eliminado"
 
 # METODOS PARA LAS RESERVAS
-# Metodo para crear una nueva reserva
+
 @app.post("/reserva/crear/", status_code=status.HTTP_200_OK)
 async def crear_reserva(reserva: ReservaBase, db: db_dependency):
+    """
+    Método para crear una nueva reserva.
+    
+    Parámetros:
+    reserva (ReservaBase): Objeto que contiene los datos de la reserva.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si la reserva se ha registrado correctamente.
+    """
     
     # Validar que los campos están ok
     if not reserva.usuario_cliente or not reserva.usuario_chef or not reserva.fecha:
@@ -260,11 +360,20 @@ async def crear_reserva(reserva: ReservaBase, db: db_dependency):
     db.commit()
     return "La reserva se ha registrado correctamente"
     
-# Metodo para modificar la reserva
-# @id   
-# En el json, es necesario rellenar todos los datos para que no de error 
 @app.post("/reserva/modificar/{id}", status_code=status.HTTP_200_OK)
 async def modificar_reserva (reserva_actualizada: ReservaBase, id: int, db: db_dependency):
+    """
+    Método para modificar la reserva.
+    
+    Parámetros:
+    reserva_actualizada (ReservaBase): Objeto que contiene los datos actualizados de la reserva.
+    id (int): ID de la reserva a modificar.
+    db (db_dependency): Dependencia de la base de datos.
+    En el json, es necesario rellenar todos los datos para que no de error.
+
+    Retorna:
+    str: Mensaje de éxito si la reserva se ha modificado correctamente.
+    """
     db_reserva = db.query(models.Reserva).filter(models.Reserva.id == id).first()
     
     if db_reserva is None:
@@ -278,10 +387,18 @@ async def modificar_reserva (reserva_actualizada: ReservaBase, id: int, db: db_d
     db.commit()
     return "La reserva se ha modificado correctamente"
 
-# Metodo para listar todas las reservas que tiene un usuario
-# @token
 @app.get("/reserva/listar/{token}", status_code=status.HTTP_200_OK)
 async def listar_reserva(token:str, db: db_dependency):
+    """
+    Método para listar todas las reservas que tiene un usuario.
+    
+    Parámetros:
+    token (str): Token del usuario.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de reservas del usuario.
+    """
     try:
         decoded_token = decode(token, "secret_key", algorithms=["HS256"])
         usuario = decoded_token["usuario"]
