@@ -15,7 +15,9 @@ import bcrypt
 from crip import encrypt, decrypt
 import secrets
 
-app = FastAPI()
+app = FastAPI(title="ChooseChef API REST",
+                description="API para la app ChooseChef",
+                version="4.5")
 
 class UsuarioBase(BaseModel):
     id: int

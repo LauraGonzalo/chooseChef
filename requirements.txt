@@ -4,3 +4,7 @@ pymysql==1.1.0
 sqlalchemy==2.0.28
 mysql-connector-python==8.3.0
 pyjwt==2.8.0
+cryptography==42.0.5
+pycparser==2.22
+bcrypt==4.1.2
+pytest== 8.1.1
