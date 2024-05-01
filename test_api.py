@@ -1,3 +1,5 @@
+from randomtimestamp import randomtimestamp
+from datetime import datetime, timedelta
 import requests
 import random
 import json
@@ -104,8 +106,6 @@ class TestClass:
         # Verifica que la respuesta contenga datos válidos, en este caso el nombre de usuario
         assert response.json().get("usuario") == "PruebaRepetido"
 
-
-    # TODO
     # POST Modificar usuario
     def test_modificar_usuario(self):
         # Creo un numero aleatorio para generar un nuevo valor a modificar
@@ -148,8 +148,7 @@ class TestClass:
 
         # Verifica que la respuesta contenga el nuevo nombre
         assert response_revisar.json().get("nombre") == nuevo_nombre
-        
-    # TODO
+   
     # GET Listar Chefs
     def test_listar_chefs(self):
       
@@ -164,7 +163,6 @@ class TestClass:
       # Verifica que la lista contenga al menos un chef
       assert len(response.json()) > 0
 
-    # TODO
     # GET Listar ubicaciones con chefs
     def test_provincias_chefs(self):
       response = requests.get(self.api_url + "provincias/conChef/")
@@ -178,7 +176,6 @@ class TestClass:
       # Verifica que no lista provincias que no tengan chef
       assert not 'Huesca' in response.json()
 
-    # TODO
     # GET Listar Chef Por Ubicacion Comida Servicio
     def test_especifico_chefs(self):
       response = requests.get(self.api_url + "/chef/listar/por/Madrid/Mediterranea/Domicilio")
@@ -217,7 +214,6 @@ class TestClass:
         # Verifica que la lista contenga al menos un usuario
         assert len(response.json()) > 0
 
-    # TODO
     # GET Obtener perfil admin
     def test_admin_obtener_perfil(self):
         response = requests.get(self.api_url + "admin/perfil/", params= {"usuario": "Paloma"})
@@ -231,7 +227,6 @@ class TestClass:
 
         assert response
 
-    # TODO
     # POST Modificar usuario Admin
     def test_admin_modifica_usuario(self):
         usuario = "PruebaRepetido"
@@ -295,33 +290,83 @@ class TestClass:
         response_buscar = requests.get(self.api_url + "admin/perfil/", params= {"usuario": "PruebaEliminar"})
         assert '"Usuario no encontrado"' in response_buscar.text
         
-    """
-       
-    PENDIENTES DE IMPLEMENTAR
-    
-    # POST Crear reserva
+    def gen_datetime(min_year=1900, max_year=datetime.now().year):
+        min_year=1900
+        max_year=datetime.now().year
+
+        start = datetime(min_year, 1, 1, 00, 00, 00)
+        years = max_year - min_year+1
+        end = start + timedelta(days=365 * years)
+        # generate a datetime in format yyyy-mm-dd hh:mm:ss.000000
+        start = datetime(min_year, 1, 1, 00, 00, 00)
+        years = max_year - min_year + 1
+        end = start + timedelta(days=365 * years)
+        return start + (end - start) * random.random()
+        
+    # POST Crear reserva nueva
     def test_crear_reserva(self):
-        response = requests.get(self.api_url + "reserva/crear")
+        random_num = str(random.randint(1,5))
+        random_date = datetime.now().year
+        print(random_date)
+
+        # Datos de reserva para la prueba
+        reserva_data = {
+            "id": 0,
+            "usuario_cliente": "Prueba3",
+            "usuario_chef": "Eva",
+            "valoracion": random_num,
+            "comentario": "Reserva de prueba" ,
+            "fecha": random_date,
+        
+        }
+
+        # Realiza una solicitud POST para crear un usuario
+        response = requests.post( self.api_url + "reserva/crear/", json=reserva_data )
+
         print(response.text)
 
-        assert response
-
-   
-    # POST Modificar Reserva
-    def test_modificar_reserva(self):
-        valor_id = "0"
-        response = requests.get(self.api_url + "reserva/modificar/" + valor_id)
-        print(response.text)
-
-        assert response
-
-   
-    # GET Listar reserva
-    def test_listar_reservas(self):
-        token = "token"
-        response = requests.get(self.api_url + "reserva/listar/" + token)
-        print(response.text)
-
-        assert response
+        # Verifica que la respuesta sea exitosa (código 200)
+        assert response.status_code == 200
+        assert response.text == '"La reserva se ha registrado correctamente"'
     
-    """ 
+    # POST modificar reserva
+    def test_modificar_reserva(self):
+        random_num = str(random.randint(1, 5))
+        
+        # Datos de usuario ya existente con modificación
+        reserva_modificada = {
+            "id": 0,
+            "usuario_cliente": "Prueba3",
+            "usuario_chef": "Eva",
+            "valoracion": random_num,
+            "comentario": "Modificamos también el comentario" ,
+            "fecha": "2024-04-28",
+        }
+
+        # Realiza una solicitud POST para modificar una reserva existente
+        response_modificar = requests.post(self.api_url + "reserva/modificar/45", json=reserva_modificada)
+
+        # Comprobamos respuesta 200 a la petición
+        assert response_modificar.status_code == 200
+    
+    # GET Listar reservas
+    def test_listar_reservas(self):
+        # Login para obtener el token
+        loginok = requests.get(self.api_url + "usuario/login/token/Laura/laura")
+
+        # parsea el JSON de la respuesta
+        consulta_token = json.loads(loginok.text)
+
+        # Obtiene el valor del token
+        token = consulta_token.get("token", "")
+      
+        response = requests.get(self.api_url + "reserva/listar/"+token)
+        
+        # Verifica el código de estado de la respuesta
+        assert response.status_code == 200
+
+        # Verifica que la respuesta sea una lista
+        assert isinstance(response.json(), list)
+
+        # Verifica que la lista contenga al menos un chef
+        assert len(response.json()) > 0

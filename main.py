@@ -10,6 +10,10 @@ from sqlalchemy.orm import Session
 from jwt import encode, decode
 from datetime import datetime, timedelta
 from sqlalchemy.sql import or_
+from security import hash_password, verify_password
+import bcrypt
+from crip import encrypt, decrypt
+import secrets
 
 app = FastAPI()
 
@@ -57,15 +61,22 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
     Retorna:
     dict: Token de sesión.
     """
+    
+    key_string = "ffef4bdb71362d718712ebf1224600f0"
+    key_bytes = bytes.fromhex(key_string)
+    
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
-
+    pass_user = db_usuario.password
+    
+    print("Pass encriptado: " + pass_user)
+    pass_decrip = decrypt(key_bytes, pass_user).decode("utf-8")
+    print("Pass DESencriptado: " + pass_decrip)
+    
     if db_usuario is None:
         return {"error": "Usuario no encontrado"}
-
-    if db_usuario.password != password:
+    if pass_decrip != password:        
         return {"error": "Contraseña incorrecta"}
-
-    # Generar token
+    
     token_payload = {
         "usuario": usuario,
         "exp": datetime.now() + timedelta(minutes=60),
@@ -74,6 +85,9 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
     token = encode(token_payload, "secret_key", algorithm="HS256")
 
     return {"token": token}
+    
+    
+
 
 @app.get("/usuario/perfil/", status_code=status.HTTP_200_OK)
 async def obtener_perfil(token: str, db: db_dependency):
@@ -184,6 +198,26 @@ async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
     if db_usuario is None:
+        #password_dict = {'password': usuario.password}
+        #encode_password = encode (password_dict, "secret_key", algorithm="HS256")
+        #usuario.password = encode_password
+         # Encriptar la contraseña antes de guardarla en la base de datos
+        #hashed_password = bcrypt.hashpw(usuario.password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Reemplazar la contraseña del usuario con la versión encriptada
+        #usuario.password = hashed_password.decode('utf-8')
+        
+        key_string = "ffef4bdb71362d718712ebf1224600f0"
+        key_bytes = bytes.fromhex(key_string)
+        
+        password = usuario.password
+        codePass = (password).encode('utf-8')
+        #secretKey = secrets.token_bytes(16)
+        #secretKey2 = secretKey.hex()
+        #print("Secret Key: " + secretKey2)
+        #key = bytes(secretKey, 'utf-8')eeeeee  º1
+        cripPass = encrypt(key_bytes, codePass)
+        usuario.password = cripPass
         db_usuario = models.Usuario(**usuario.dict())
         db.add(db_usuario)
         db.commit()
@@ -416,12 +450,110 @@ async def listar_reserva(token:str, db: db_dependency):
                     models.Reserva.usuario_chef == usuario)) \
         .all()
     return reservas
+
+@app.get("/reserva/listar/todas/", status_code=status.HTTP_200_OK)
+async def listar_reserva_todas(db: db_dependency):
+    """
+    Método para listar todas las reservas.
+    
+    Parámetros:
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de todas las reservas existentes en la bd.
+    """    
+    
+    db_reservas = db.query(models.Reserva).all()
+    #return reservas
+
+    #db_usuarios = db.query(models.Usuario).all() 
+    
+    if not db_reservas:
+        raise HTTPException(status_code=404, detail="No se encontraron reservas")
+    return db_reservas   
+
+@app.get("/reserva/listar/chef/{usuario}", status_code=status.HTTP_200_OK)
+async def listar_reserva_chef(usuario:str, db: db_dependency):
+    """
+    Método para listar todas las reservas que tiene un usuario chef.
+    
+    Parámetros:
+    usuario (str): usuario del usuario chef.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    list: Lista de reservas del usuario chef.
+    """
+    
+    db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario).first()
+
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+
+    reservas = db.query(models.Reserva) \
+        .filter(models.Reserva.usuario_chef == usuario) \
+        .all()
+    return reservas
+
+@app.delete("/borrar/reserva/{id}", status_code=status.HTTP_200_OK)
+async def eliminar_reserva(id:int, db: db_dependency):
+    """
+    Método que sirve para eliminar una reserva por su id.
+    
+    Parámetros:
+    id (int): Id de reserva a eliminar.
+    db (db_dependency): Dependencia de la base de datos.
+
+    Retorna:
+    str: Mensaje de éxito si la reserva se ha eliminado correctamente.
+    """
+    db_reserva = db.query(models.Reserva).filter(models.Reserva.id == id).first()
+    if db_reserva is None:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    else:
+        db.delete(db_reserva)
+        db.commit()
+        return "Reserva eliminada"
+
    
-        
+#password_decode = decode(db_usuario.password, "secret_key", algorithms=["HS256"])
+    #if db_usuario.password != password:
+    #    return {"error": "Contraseña incorrecta"}
+    
+    # Convertir la contraseña almacenada en bytes
+    #encode_password = password.encode('utf-8')
+    
+    # Convertir la contraseña almacenada en la base de datos en bytes
+    #db_password_str = str(db_usuario.password)
+    #db_password_bytes = db_password_str.encode('utf-8')
+    
+    # Obtener la contraseña hash almacenada en la base de datos
+    #stored_password_hash = db_usuario.password.encode('utf-8')
+    
+    #print (stored_password_hash)
+    #print (db_password_str)
+    #print (db_password_bytes)
+    #print (password)
+    #print(password.encode('utf-8')) 
+    # Verificar si la contraseña proporcionada coincide con la contraseña almacenada en la base de datos
+    #if bcrypt.checkpw(encode_password, db_password_bytes ):
+    #if bcrypt.hashpw(password.encode('utf-8'), stored_password_hash) == stored_password_hash:   
+    #    print(password.encode('utf-8')) 
+    # Generar token        
 
 
 
 """METODOS DESCARTADOS
+
+# Generar token
+    token_payload = {
+        "usuario": usuario,
+        "exp": datetime.now() + timedelta(minutes=60),
+    }
+   
+    token = encode(token_payload, "secret_key", algorithm="HS256")
+
+    return {"token": token}
 
 reservas = db.query(models.Reserva) \
         .join(models.Reserva.usuario_cliente) \
