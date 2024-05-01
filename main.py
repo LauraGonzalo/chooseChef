@@ -15,9 +15,7 @@ import bcrypt
 from crip import encrypt, decrypt
 import secrets
 
-app = FastAPI(title="ChooseChef API REST",
-                description="API para la app ChooseChef",
-                version="4.5")
+app = FastAPI()
 
 class UsuarioBase(BaseModel):
     id: int
@@ -674,5 +672,8 @@ async def modificar_usuario (usuario: UsuarioBase, db: db_dependency):
     db.commit()
     return "El usuario se ha modificado correctamente"
 
+title="ChooseChef API REST",
+                description="API para la app ChooseChef",
+                version="4.5"
 
 """
