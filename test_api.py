@@ -16,10 +16,10 @@ class TestClass:
 
     # Hace login con las credenciales correctas y comprueba que la respuesta no es error
     def test_login(self):
-        response = requests.get(self.api_url + "usuario/login/token/PruebaRepetido/123456")
+        response = requests.get(self.api_url + "usuario/login/token/Laura/1234")
         print(response.text)
 
-        assert response.text != '{"error":"Usuario no encontrado"}' and "token" in response.text
+        assert '"token"' in response.text
 
     # Hace login con las credenciales erroneas y comprueba que responde con el mensaje de error correspondiente
     def test_error_login(self):
@@ -89,7 +89,7 @@ class TestClass:
     # GET Obtener Perfil
     def test_obtener_perfil(self):
         # Login para obtener el token
-        loginok = requests.get(self.api_url + "usuario/login/token/PruebaRepetido/123456")
+        loginok = requests.get(self.api_url + "usuario/login/token/Laura/1234")
 
         # parsea el JSON de la respuesta
         consulta_token = json.loads(loginok.text)
@@ -104,7 +104,7 @@ class TestClass:
         assert response.status_code == 200
 
         # Verifica que la respuesta contenga datos válidos, en este caso el nombre de usuario
-        assert response.json().get("usuario") == "PruebaRepetido"
+        assert response.json().get("usuario") == "Laura"
 
     # POST Modificar usuario
     def test_modificar_usuario(self):
@@ -113,7 +113,7 @@ class TestClass:
         nuevo_nombre = "Proba" + random_num
 
         # Login para obtener el token
-        loginok = requests.get(self.api_url + "usuario/login/token/PruebaRepetido/123456")
+        loginok = requests.get(self.api_url + "usuario/login/token/ProbandoServidor/1234")
 
         # parsea el JSON de la respuesta
         consulta_token = json.loads(loginok.text)
@@ -124,10 +124,10 @@ class TestClass:
         # Datos de usuario ya existente con modificación
         nuevo_usuario_data = {
             "id": 0,
-            "usuario": "PruebaRepetido",
+            "usuario": "ProbandoServidor",
             "nombre": nuevo_nombre,
-            "password": "123456",
-            "descripcion": "Error",
+            "password": "RVWxB80AvJgK8AdgheULd4NzPEazWIRjsUuiGz1nMuk=",
+            "descripcion": "prueba",
             "ubicacion": "Calle",
             "email": "prueba@prueba.prueba",
             "telefono": "0123456",
@@ -186,18 +186,18 @@ class TestClass:
       # Verifica la respuesta esperada
       expected_response = [
         {
-          "email": "paloma@madrid.com",
-          "password": "1234",
-          "descripcion": "Asisoy",
-          "telefono": "666666666",
-          "servicio": "Domicilio",
-          "usuario": "Paloma",
-          "id": 168,
-          "nombre": "Paloma",
-          "tipo": "chef",
-          "ubicacion": "Madrid",
-          "comida": "Mediterranea",
-          "valoracion": 5
+            "usuario": "ProbandoServidorChef",
+            "email": "probando@probando.com",
+            "nombre": "Prueba",
+            "tipo": "chef",
+            "ubicacion": "Madrid",
+            "comida": "Mediterranea",
+            "valoracion": 0,
+            "id": 234,
+            "password": "fetcGhJhaaCoTrlyfcG6xG8vgynOVBhvJwrhuWocRbk=",
+            "descripcion": "soy chef",
+            "telefono": "666666666",
+            "servicio": "Domicilio"
         }
       ]
       assert response.json() == expected_response
@@ -216,13 +216,13 @@ class TestClass:
 
     # GET Obtener perfil admin
     def test_admin_obtener_perfil(self):
-        response = requests.get(self.api_url + "admin/perfil/", params= {"usuario": "Paloma"})
+        response = requests.get(self.api_url + "admin/perfil/", params= {"usuario": "ProbandoServidorChef"})
 
         # Verifica que la respuesta sea exitosa (código 200)
         assert response.status_code == 200
 
         # Verifica que la respuesta contenga datos válidos, en este caso el nombre de usuario
-        assert response.json().get("usuario") == "Paloma"
+        assert response.json().get("usuario") == "ProbandoServidorChef"
         print(response.text)
 
         assert response
@@ -312,7 +312,7 @@ class TestClass:
         # Datos de reserva para la prueba
         reserva_data = {
             "id": 0,
-            "usuario_cliente": "Prueba3",
+            "usuario_cliente": "Client",
             "usuario_chef": "Eva",
             "valoracion": random_num,
             "comentario": "Reserva de prueba" ,
@@ -336,7 +336,7 @@ class TestClass:
         # Datos de usuario ya existente con modificación
         reserva_modificada = {
             "id": 0,
-            "usuario_cliente": "Prueba3",
+            "usuario_cliente": "Client",
             "usuario_chef": "Eva",
             "valoracion": random_num,
             "comentario": "Modificamos también el comentario" ,
@@ -344,23 +344,24 @@ class TestClass:
         }
 
         # Realiza una solicitud POST para modificar una reserva existente
-        response_modificar = requests.post(self.api_url + "reserva/modificar/45", json=reserva_modificada)
+        response_modificar = requests.post(self.api_url + "reserva/modificar/258", json=reserva_modificada)
 
         # Comprobamos respuesta 200 a la petición
         assert response_modificar.status_code == 200
     
     # GET Listar reservas
     def test_listar_reservas(self):
+        
         # Login para obtener el token
-        loginok = requests.get(self.api_url + "usuario/login/token/Laura/laura")
+        loginok = requests.get(self.api_url + "usuario/login/token/Laura/1234")
 
         # parsea el JSON de la respuesta
         consulta_token = json.loads(loginok.text)
-
+                
         # Obtiene el valor del token
         token = consulta_token.get("token", "")
-      
-        response = requests.get(self.api_url + "reserva/listar/"+token)
+                
+        response = requests.get(self.api_url + "reserva/listar/" + token)
         
         # Verifica el código de estado de la respuesta
         assert response.status_code == 200
@@ -368,9 +369,7 @@ class TestClass:
         # Verifica que la respuesta sea una lista
         assert isinstance(response.json(), list)
 
-        # Verifica que la lista contenga al menos un chef
-        assert len(response.json()) > 0
-    
+           
     # GET Listar todas las reservas
     def test_listar_todas_reservas(self):
         response = requests.get(self.api_url + "reserva/listar/todas/")

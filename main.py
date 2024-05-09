@@ -228,9 +228,10 @@ async def modificar_usuario (usuario_actualizado: UsuarioBase, token: str, db: d
         return {"error": "Token no válido"}
     
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == username).first()
-    
+        
     if db_usuario is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado") 
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
     db_usuario.usuario = usuario_actualizado.usuario
     db_usuario.nombre = usuario_actualizado.nombre
     db_usuario.password = usuario_actualizado.password
