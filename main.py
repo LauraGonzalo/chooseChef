@@ -1,19 +1,16 @@
 # uvicorn main:app --reload
-from collections import defaultdict
-from secrets import token_urlsafe
-from fastapi import Body, FastAPI, HTTPException, Depends, status
+
+from fastapi import  FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
-from database import engine, SessionLocal
+from database import  SessionLocal
 import models
 from typing import Annotated
 from sqlalchemy.orm import Session
 from jwt import encode, decode
 from datetime import datetime, timedelta
 from sqlalchemy.sql import or_
-from security import hash_password, verify_password
-import bcrypt
-from crip import encrypt, decrypt
-import secrets
+from security import codif, descodif
+
 
 app = FastAPI()
 
@@ -66,14 +63,15 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
     key_bytes = bytes.fromhex(key_string)
     
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario ==usuario).first()
+    if db_usuario is None:
+        return {"error": "Usuario no encontrado"}
+    
     pass_user = db_usuario.password
     
     print("Pass encriptado: " + pass_user)
-    pass_decrip = decrypt(key_bytes, pass_user).decode("utf-8")
+    pass_decrip = descodif(key_bytes, pass_user).decode("utf-8")
     print("Pass DESencriptado: " + pass_decrip)
-    
-    if db_usuario is None:
-        return {"error": "Usuario no encontrado"}
+        
     if pass_decrip != password:        
         return {"error": "Contraseña incorrecta"}
     
@@ -85,10 +83,7 @@ async def login_respuesta_token(usuario: str, password: str, db: db_dependency):
     token = encode(token_payload, "secret_key", algorithm="HS256")
 
     return {"token": token}
-    
-    
-
-
+ 
 @app.get("/usuario/perfil/", status_code=status.HTTP_200_OK)
 async def obtener_perfil(token: str, db: db_dependency):
     """
@@ -198,25 +193,12 @@ async def crear_usuario(usuario: UsuarioBase, db: db_dependency):
     """
     db_usuario = db.query(models.Usuario).filter(models.Usuario.usuario == usuario.usuario).first()
     if db_usuario is None:
-        #password_dict = {'password': usuario.password}
-        #encode_password = encode (password_dict, "secret_key", algorithm="HS256")
-        #usuario.password = encode_password
-         # Encriptar la contraseña antes de guardarla en la base de datos
-        #hashed_password = bcrypt.hashpw(usuario.password.encode('utf-8'), bcrypt.gensalt())
-        
-        # Reemplazar la contraseña del usuario con la versión encriptada
-        #usuario.password = hashed_password.decode('utf-8')
-        
         key_string = "ffef4bdb71362d718712ebf1224600f0"
         key_bytes = bytes.fromhex(key_string)
         
         password = usuario.password
         codePass = (password).encode('utf-8')
-        #secretKey = secrets.token_bytes(16)
-        #secretKey2 = secretKey.hex()
-        #print("Secret Key: " + secretKey2)
-        #key = bytes(secretKey, 'utf-8')eeeeee  º1
-        cripPass = encrypt(key_bytes, codePass)
+        cripPass = codif(key_bytes, codePass)
         usuario.password = cripPass
         db_usuario = models.Usuario(**usuario.dict())
         db.add(db_usuario)
@@ -307,7 +289,6 @@ async def obtener_perfil_admin(usuario: str, db: db_dependency):
         print(f"Error al obtener perfil: {e}")
         return {"error": "Error al obtener perfil"}
 
-# Metodo para que el admin pueda modificar un determinado usuario
 @app.post("/admin/modificar/{usuario}", status_code=status.HTTP_200_OK)
 async def modificar_usuario_admin (usuario_actualizado: UsuarioBase, usuario: str, db: db_dependency):
     """
@@ -516,33 +497,6 @@ async def eliminar_reserva(id:int, db: db_dependency):
         return "Reserva eliminada"
 
    
-#password_decode = decode(db_usuario.password, "secret_key", algorithms=["HS256"])
-    #if db_usuario.password != password:
-    #    return {"error": "Contraseña incorrecta"}
-    
-    # Convertir la contraseña almacenada en bytes
-    #encode_password = password.encode('utf-8')
-    
-    # Convertir la contraseña almacenada en la base de datos en bytes
-    #db_password_str = str(db_usuario.password)
-    #db_password_bytes = db_password_str.encode('utf-8')
-    
-    # Obtener la contraseña hash almacenada en la base de datos
-    #stored_password_hash = db_usuario.password.encode('utf-8')
-    
-    #print (stored_password_hash)
-    #print (db_password_str)
-    #print (db_password_bytes)
-    #print (password)
-    #print(password.encode('utf-8')) 
-    # Verificar si la contraseña proporcionada coincide con la contraseña almacenada en la base de datos
-    #if bcrypt.checkpw(encode_password, db_password_bytes ):
-    #if bcrypt.hashpw(password.encode('utf-8'), stored_password_hash) == stored_password_hash:   
-    #    print(password.encode('utf-8')) 
-    # Generar token        
-
-
-
 """METODOS DESCARTADOS
 
 # Generar token

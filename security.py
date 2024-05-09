@@ -1,12 +1,30 @@
-from passlib.hash import bcrypt
+import base64
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
+import os
 
+# funcion para CODIFICAR
+def codif(key, data):
+    padder = padding.PKCS7(128).padder()
+    padded_data = padder.update(data) + padder.finalize()
+    iv = os.urandom(16)
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    encrypted_data = iv + encryptor.update(padded_data) + encryptor.finalize()
+    return base64.b64encode(encrypted_data).decode('utf-8')
 
-def hash_password(password: str) -> str:
-    """Convierte una contraseña de texto simple en un hash utilizando bcrypt"""
-    return bcrypt.hash(password)
-
-def verify_password(hashed_password: str, plain_password: str) -> bool:
-    """Verifica una contraseña de texto simple contra una contraseña con hash."""
-    return bcrypt.verify(plain_password, hashed_password)
-
+# funcion para DESCODIFICAR
+def descodif(key, data):
+    decoded_data = base64.b64decode(data)
+    iv = decoded_data[:16]
+    data = decoded_data[16:]
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    padded_data = decryptor.update(data) + decryptor.finalize()
+    unpadder = padding.PKCS7(128).unpadder()
+    return unpadder.update(padded_data) + unpadder.finalize()

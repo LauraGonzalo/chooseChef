@@ -172,7 +172,7 @@ class TestClass:
       assert isinstance(response.json(), list)
       
       # Verifica que la lista contenga las ubicaciones esperadas
-      assert 'Barcelona' and 'Tarragona' and 'Girona' in response.json()
+      assert 'Barcelona' and 'Madrid' and 'Lleida' in response.json()
       # Verifica que no lista provincias que no tengan chef
       assert not 'Huesca' in response.json()
 
@@ -370,3 +370,48 @@ class TestClass:
 
         # Verifica que la lista contenga al menos un chef
         assert len(response.json()) > 0
+    
+    # GET Listar todas las reservas
+    def test_listar_todas_reservas(self):
+        response = requests.get(self.api_url + "reserva/listar/todas/")
+        # Verifica el código de estado de la respuesta
+        assert response.status_code == 200
+
+        # Verifica que la respuesta sea una lista
+        assert isinstance(response.json(), list)
+
+        # Verifica que la lista contenga al menos un usuario
+        assert len(response.json()) > 0
+    
+    # GET Listar todas las reservas que tiene un usuario
+    def test_listar_reservas_chef(self):
+        response = requests.get(self.api_url + "/reserva/listar/chef/Laura")
+
+        # Verifica que la respuesta sea exitosa (código 200)
+        assert response.status_code == 200
+
+       # Verifica que la respuesta sea una lista
+        assert isinstance(response.json(), list)
+
+        # Verifica que la lista contenga al menos un chef
+        assert len(response.json()) > 0
+
+    # DELETE Eliminar reserva
+    def test_eliminar_reserva(self):
+        
+        # Datos de reserva para la prueba
+        reserva_data = {
+            "id": 250,
+            "usuario_cliente": "client",
+            "usuario_chef": "chef",
+            "fecha": "2024-05-07",
+            "valoracion": 3,
+            "comentario": "bien"
+        }
+        #creamos una nueva reserva
+        response_crear = requests.post( self.api_url + "reserva/crear/", json=reserva_data )
+        assert response_crear.status_code == 200  
+        # Eliminar reserva creada    
+        response_eliminar = requests.delete(self.api_url + "borrar/reserva/250")
+        assert response_eliminar.status_code == 200  
+        
